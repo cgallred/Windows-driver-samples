@@ -33,6 +33,7 @@ Environment:
 #pragma alloc_text(PAGE, CtxPreClose)
 #pragma alloc_text(PAGE, CtxPreSetInfo)
 #pragma alloc_text(PAGE, CtxPostSetInfo)
+#pragma alloc_text(PAGE, CtxPreReadWrite)
 #endif
 
 
@@ -1079,3 +1080,108 @@ CtxPostSetInfoCleanup:
 }
 
 
+// This exists only to retrieve the contexts to exercise the locking code.
+FLT_PREOP_CALLBACK_STATUS
+CtxPreReadWrite (
+    _Inout_ PFLT_CALLBACK_DATA Cbd,
+    _In_ PCFLT_RELATED_OBJECTS FltObjects,
+    _Flt_CompletionContext_Outptr_ PVOID* CompletionContext
+)
+{
+    FLT_PREOP_CALLBACK_STATUS callbackStatus;
+    PCTX_INSTANCE_CONTEXT instanceContext = NULL;
+    PCTX_STREAM_CONTEXT streamContext = NULL;
+    PCTX_FILE_CONTEXT fileContext = NULL;
+    PCTX_STREAMHANDLE_CONTEXT streamHandleContext = NULL;
+    NTSTATUS status;
+    BOOLEAN streamContextCreated, fileContextCreated;
+
+    UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(CompletionContext);
+
+    PAGED_CODE();
+
+    callbackStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
+
+    // Get the instance context
+    status = FltGetInstanceContext(Cbd->Iopb->TargetInstance,
+                                   &instanceContext);
+    if (!NT_SUCCESS(status))
+    {
+        DebugTrace(DEBUG_TRACE_INSTANCE_CONTEXT_OPERATIONS | DEBUG_TRACE_ERROR,
+            ("[Ctx]: CtxPreReadWrite -> Failed to get instance context (Cbd = %p, FileObject = %p)\n",
+             Cbd,
+             FltObjects->FileObject));
+    }
+
+
+    // Get the stream context
+    status = CtxFindOrCreateStreamContext(Cbd,
+                                          FALSE,     // do not create if one does not exist
+                                          &streamContext,
+                                          &streamContextCreated);
+
+    if (!NT_SUCCESS(status))
+    {
+        //  This failure will most likely be because stream contexts are not supported
+        //  on the object we are trying to assign a context to or the object is being 
+        //  deleted
+        DebugTrace(DEBUG_TRACE_ERROR | DEBUG_TRACE_STREAM_CONTEXT_OPERATIONS,
+            ("[Ctx]: CtxPreReadWrite -> Failed to find stream context (Cbd = %p, FileObject = %p)\n",
+             Cbd,
+             FltObjects->FileObject));
+    }
+
+    // Get the file context
+    status = CtxFindOrCreateFileContext(Cbd,
+                                        FALSE,     // do not create if one does not exist
+                                        NULL,
+                                        &fileContext,
+                                        &fileContextCreated);
+
+    if (!NT_SUCCESS(status))
+    {
+        //  This failure will most likely be because file contexts are not supported
+        //  on the object we are trying to assign a context to or the object is being 
+        //  deleted
+        DebugTrace(DEBUG_TRACE_ERROR | DEBUG_TRACE_FILE_CONTEXT_OPERATIONS,
+            ("[Ctx]: CtxPreReadWrite -> Failed to find file context (Cbd = %p, FileObject = %p)\n",
+             Cbd,
+             FltObjects->FileObject));
+    }
+
+    // Get the streamhandle context
+    status = FltGetStreamHandleContext(Cbd->Iopb->TargetInstance,
+                                       Cbd->Iopb->TargetFileObject,
+                                       &streamHandleContext);
+
+    if (!NT_SUCCESS(status))
+    {
+        DebugTrace(DEBUG_TRACE_ERROR | DEBUG_TRACE_STREAMHANDLE_CONTEXT_OPERATIONS,
+            ("[Ctx]: CtxPreReadWrite -> Failed to find streamhandle context (Cbd = %p, FileObject = %p)\n",
+             Cbd,
+             FltObjects->FileObject));
+    }
+
+    if (streamHandleContext != NULL)
+    {
+        FltReleaseContext(streamHandleContext);
+    }
+
+    if (fileContext != NULL)
+    {
+        FltReleaseContext(fileContext);
+    }
+
+    if (streamContext != NULL)
+    {
+        FltReleaseContext(streamContext);
+    }
+
+    if (instanceContext != NULL)
+    {
+        FltReleaseContext(instanceContext);
+    }
+
+    return callbackStatus;
+}

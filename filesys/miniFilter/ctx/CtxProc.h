@@ -69,6 +69,12 @@ CtxPostSetInfo (
     _In_ FLT_POST_OPERATION_FLAGS Flags
     );
 
+FLT_PREOP_CALLBACK_STATUS
+CtxPreReadWrite (
+    _Inout_ PFLT_CALLBACK_DATA Cbd,
+    _In_ PCFLT_RELATED_OBJECTS FltObjects,
+    _Flt_CompletionContext_Outptr_ PVOID* CompletionContext
+);
 
 //
 //  Functions implemented in context.c

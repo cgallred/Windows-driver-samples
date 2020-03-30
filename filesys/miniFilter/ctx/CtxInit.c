@@ -131,6 +131,16 @@ FLT_OPERATION_REGISTRATION Callbacks[] = {
       CtxPreSetInfo,
       CtxPostSetInfo },
 
+    { IRP_MJ_READ,
+      FLTFL_OPERATION_REGISTRATION_SKIP_PAGING_IO,
+      CtxPreReadWrite,
+      NULL },
+
+    { IRP_MJ_WRITE,
+      FLTFL_OPERATION_REGISTRATION_SKIP_PAGING_IO,
+      CtxPreReadWrite,
+      NULL },
+
     { IRP_MJ_OPERATION_END }
 };
 
