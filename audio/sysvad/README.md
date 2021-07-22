@@ -13,7 +13,7 @@ urlFragment: sysvad-virtual-audio-device-driver-sample
 
 ## Important note
 
-With the [end of support for Windows 10 Mobile](https://support.microsoft.com/en-us/help/4484693/windows-10-mobile-end-of-support), the Phone Audio sample has been also removed from the SysVAD driver sample.
+With the [end of support for Windows 10 Mobile](https://support.microsoft.com/help/4484693/windows-10-mobile-end-of-support), the Phone Audio sample has been also removed from the SysVAD driver sample.
 
 ## Introduction
 
@@ -81,7 +81,7 @@ The package should contain these files:
 | ComponentizedAudioSampleExtension.inf | An extension information (INF) file that extends the Tablet Audio Sample driver functionality by associating an APO device to it. |
 | TabletAudioSample.inf | A non-componentized information (INF) file that contains information needed to install the driver. |
 
-For more information on extension INF files, see [Using an extension INF file](https://docs.microsoft.com/en-us/windows-hardware/drivers/install/using-an-extension-inf-file).
+For more information on extension INF files, see [Using an extension INF file](https://docs.microsoft.com/windows-hardware/drivers/install/using-an-extension-inf-file).
 
 ## Run the sample
 
@@ -101,8 +101,8 @@ Open a Command Prompt window as Administrator. Then enter the following command:
 
 and reboot the target computer.
 
-[!IMPORTANT]
-Before using BCDEdit to change boot information you may need to temporarily suspend Windows security features such as BitLocker and Secure Boot on the test PC.
+> [!IMPORTANT]
+> Before using BCDEdit to change boot information you may need to temporarily suspend Windows security features such as BitLocker and Secure Boot on the test PC.
 
 Re-enable these security features when testing is complete and appropriately manage the test PC, when the security features are disabled.
 
@@ -126,7 +126,7 @@ Without any signature or kernel debugger, the driver will not be installed in th
 
 The only way of installing and executing the whole driver sample is to have all the files (.sys, .dll and .cat) signed with a trusted certificate. This will allow the entire driver to be loaded even without a kernel debugger attached.
 
-For more information on the subject, see [Driver signing](https://docs.microsoft.com/en-us/windows-hardware/drivers/install/driver-signing).
+For more information on the subject, see [Driver signing](https://docs.microsoft.com/windows-hardware/drivers/install/driver-signing).
 
 ### Install the driver
 
@@ -175,3 +175,11 @@ On the target computer, in a Command Prompt window, enter **devmgmt.msc** to ope
 On the target computer, open Control Panel and navigate to **Hardware and Sound** \> **Manage audio devices**. In the Sound dialog box, select the speaker icon labeled as *SYSVAD (with APO Extensions)*, then click **Set Default**, but do not click **OK**. This will keep the Sound dialog box open.
 
 Locate an MP3 or other audio file on the target computer and double-click to play it. Then in the Sound dialog box, verify that there is activity in the volume level indicator associated with the *SYSVAD (with APO Extensions)* driver.
+
+## HLK testing
+
+The sample uploaded here is tested using the latest HLK version available to make sure it passes all audio tests in the current playlist. However, since it is a virtual audio driver it does not implement audio mixing and simulates capture and loopback by generating a tone. Given these limitations, there are some HLK tests that are expected to fail because they rely on the described functionality.
+
+In the case of audio tests, one of these exceptions is the Hardware Offload of Audio Processing Test. This test is aimed at devices that support offload capabilities and performs checks to make sure that the device complies with the appropiate requirements. In the particular case of SysVAD, this test will fail for endpoints with offload and loopback.
+
+For endpoints with offload, the test will fail because the driver includes offload pins but it does not implement a mixer with volume, mute and peak meter nodes, etc. For the case of endpoints with loopback, the test will fail because the driver simulates loopback by returning a sine tone instead of performing real mixing of streams in host and/or offload pins.
